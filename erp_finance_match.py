@@ -11,9 +11,9 @@ logging.basicConfig(filename="/tmp/erp_finance_match.log", level=logging.INFO, f
 logger = logging.getLogger(__name__)
 
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CSV_PATH = os.path.join(BASE_DIR, "uploads", "finance_upload.csv")
-DB_PATH = os.path.join(BASE_DIR, "erp_all.db")
+from erp_config import DB_PATH
+
+CSV_PATH = os.path.join(DB_PATH.replace("erp_all.db", ""), "uploads", "finance_upload.csv")
 
 
 def load_csv_finance(csv_path):

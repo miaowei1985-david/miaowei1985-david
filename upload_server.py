@@ -15,22 +15,7 @@ from urllib.parse import parse_qs
 import cgi
 import shutil
 
-# 上传目录
-UPLOAD_DIRS = {
-    "finance": os.path.expanduser("~/pdd/jd售后/后台拉取的财务对账和售后"),
-    "after_sales": os.path.expanduser("~/pdd/jd售后"),
-    "weight": os.path.expanduser("~/pdd/jd售后/产品规格"),
-}
-
-TYPE_LABELS = {
-    "finance": "财务对账",
-    "after_sales": "售后数据",
-    "weight": "规格重量",
-}
-
-# 确保目录存在
-for d in UPLOAD_DIRS.values():
-    os.makedirs(d, exist_ok=True)
+from erp_config import UPLOAD_DIRS, TYPE_LABELS
 
 HTML_PAGE = """<!DOCTYPE html>
 <html lang="zh">

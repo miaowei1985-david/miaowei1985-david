@@ -14,6 +14,29 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # ===== 数据库 =====
 DB_PATH = os.path.join(BASE_DIR, "erp_all.db")
 
+# ===== ERP API =====
+ERP_API_BASE = "https://erp.huice.com"
+SHOP_NAME = "榴愿时刻工厂店"
+
+# ===== 仪表盘 =====
+DASHBOARD_PORT = 9999
+
+# ===== 文件上传 =====
+UPLOAD_DIRS = {
+    "finance": os.path.join(BASE_DIR, "uploads"),
+    "after_sales": os.path.join(BASE_DIR, "uploads"),
+    "weight": os.path.join(BASE_DIR, "产品规格"),
+    "product_cost": os.path.join(BASE_DIR, "产品成本"),
+}
+TYPE_LABELS = {
+    "finance": "财务对账",
+    "after_sales": "售后数据",
+    "weight": "规格重量",
+    "product_cost": "产品成本",
+}
+for _d in UPLOAD_DIRS.values():
+    os.makedirs(_d, exist_ok=True)
+
 # ===== 邮件默认配置 =====
 EMAIL_FROM = os.environ.get("ERP_EMAIL_FROM", "88187402@qq.com")
 EMAIL_AUTH = os.environ.get("ERP_EMAIL_AUTH", "")  # 必须设置
@@ -32,6 +55,14 @@ EMAIL_TO_WAIT_CHECK = [
     "88187402@qq.com", "17821279335@163.com",
     "hb-champion@foxmail.com", "136941100@qq.com", "985693739@qq.com", "949547543@qq.com",
 ]
+
+# ===== 主题色 =====
+THEME = {
+    'ACCENT': '#00d4ff', 'GREEN': '#00e676', 'AMBER': '#ffc107',
+    'RED': '#ff5252', 'DARK_BG': '#0d1117', 'CARD_BG': '#161b22',
+    'TABLE_HEAD': '#1c2333', 'BORDER': '#30363d',
+    'TEXT': '#c9d1d9', 'TEXT_DIM': '#8b949e', 'TEXT_BRIGHT': '#ffffff',
+}
 
 # ===== 公共函数 =====
 def send_email(subject, html_content, to_list=None):
@@ -61,6 +92,7 @@ def setup_logger(name, log_file, level=logging.INFO):
         format="%(asctime)s %(levelname)s %(message)s",
     )
     return logging.getLogger(name)
+
 
 import sqlite3
 

@@ -13,7 +13,7 @@ logging.basicConfig(filename="/tmp/erp_weather.log", level=logging.INFO, format=
 logger = logging.getLogger(__name__)
 
 
-DB_PATH = '/Users/macmini4pro/pdd/Claudecode/erp_all.db'
+from erp_config import DB_PATH
 
 # 全国主要城市坐标（省会+计划单列市+重点地级市+东南亚城市）
 CITIES = {

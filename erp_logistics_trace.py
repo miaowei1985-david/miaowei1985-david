@@ -19,10 +19,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-DB_PATH = os.path.expanduser("~/pdd/Claudecode/erp_all.db")
+from erp_config import DB_PATH
 API_URL = "https://erp.huice.com/api/main/oms/logistics/trace/list"
 TOKEN = os.environ.get("ERP_TOKEN", "")
-SHOP_NAME = "榴愿时刻工厂店"
+from erp_config import SHOP_NAME
 
 
 def create_table(conn):
@@ -45,6 +45,8 @@ def create_table(conn):
             current_site TEXT,
             next_site TEXT,
             error_message TEXT,
+            operate_category TEXT,
+            pipeline_stage TEXT,
             created_at TEXT,
             UNIQUE(trace_id)
         )
@@ -52,6 +54,10 @@ def create_table(conn):
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_logistics_no ON logistics_trace(logistics_no)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_operate_time ON logistics_trace(operate_time)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_order_id ON logistics_trace(order_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_logistics_desc ON logistics_trace(logistics_no, operate_desc)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_desc_time ON logistics_trace(operate_desc, operate_time)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_logistics_desc_time ON logistics_trace(logistics_no, operate_desc, operate_time)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_category ON logistics_trace(operate_category)")
     conn.commit()
     logger.info("物流轨迹表检查完成")
 
@@ -120,30 +126,125 @@ def fetch_trace(logistics_no, sys_logistics_code, token):
         return None
 
 
+def classify_trace(operate_desc, trace_info):
+    """将 operate_desc + trace_info 归类为标准分类"""
+    if operate_desc != "其它":
+        return operate_desc
+    info = trace_info or ""
+    # 海关清关必须在跨城转运之前（关务站点会被"发往【"匹配）
+    if "海关" in info or "清关" in info or "关务" in info or "查验" in info or \
+       "国际转运" in info or "深圳机场口岸" in info:
+        return "海关清关"
+    if ("快件到达【" in info and "发往【" in info) or \
+       ("离开【" in info and "发往" in info) or \
+       ("到达【" in info and "转运" in info) or \
+       ("离开" in info and "转运" in info):
+        return "跨城转运"
+    if "安检通过" in info or "准备分拣" in info:
+        return "中转分拣"
+    if "铁路运输" in info:
+        return "铁路运输"
+    if "合作点" in info:
+        return "合作点自提"
+    if "领取成功" in info:
+        return "领取成功"
+    if "丰巢" in info or "快递柜" in info:
+        return "快递柜投放"
+    if "自取点" in info:
+        return "指定自取"
+    if "取消" in info or "已作废" in info:
+        return "订单取消"
+    if "长途运输" in info:
+        return "长途运输"
+    return "其他"
+
+
+def classify_pipeline_stage(operate_desc, operate_category, trace_info):
+    """将物流轨迹归类为跨境物流管道阶段"""
+    info = trace_info or ""
+    if operate_desc == "已签收":
+        return "已签收"
+    if operate_desc == "派送中":
+        return "派送中"
+    if operate_desc == "已揽件":
+        return "已揽件"
+    if operate_desc == "问题件":
+        return "问题件"
+    if operate_desc == "拒收":
+        return "拒收"
+    if operate_desc == "待揽件":
+        return "待揽件"
+    if operate_category == "海关清关":
+        return "海关清关"
+    if "尖竹汶" in info and "揽收点" in info:
+        return "泰国揽收"
+    if "曼谷" in info and "口岸" in info and "完成分拣" in info:
+        return "曼谷口岸"
+    if "曼谷" in info and ("飞往" in info or "起飞" in info) and "深圳" in info:
+        return "曼谷飞行"
+    if "深圳机场转运中心" in info:
+        return "深圳机场"
+    if "深圳" in info and ("分拣" in info or "转运中心" in info) and "机场" not in info:
+        return "深圳分拣"
+    if ("离开" in info and "深圳" in info and "发往" in info) or \
+       ("已发车" in info and operate_desc == "运输中") or \
+       ("到达" in info and "转运中心" in info and "机场" not in info):
+        return "国内转运"
+    if "华东" in info and "陆运转笼" in info:
+        return "华东转运"
+    if ("到达【" in info and "站】" in info) or \
+       ("离开" in info and "站】" in info) or \
+       ("发往" in info and "站】" in info):
+        return "国内派送"
+    if operate_category == "跨城转运":
+        return "国内转运"
+    if operate_category == "中转分拣":
+        return "中转分拣"
+    if operate_category == "合作点自提":
+        return "合作点自提"
+    if operate_category == "快递柜投放":
+        return "快递柜投放"
+    if operate_category == "铁路运输":
+        return "铁路运输"
+    if operate_category == "指定自取":
+        return "指定自取"
+    if operate_category == "领取成功":
+        return "领取成功"
+    if operate_category == "订单取消":
+        return "订单取消"
+    if operate_category == "长途运输":
+        return "长途运输"
+    return operate_category or "其他"
+
+
 def save_traces(conn, traces, order_info):
     cursor = conn.cursor()
     order_id, src_tid, logistics_no, sys_logistics_code, logistics_name = order_info[:5]
-    
+
     saved = 0
     for trace in traces:
         trace_id = trace.get("traceId")
         if not trace_id:
             continue
+        operate_desc = trace.get("operateDesc")
+        trace_info = trace.get("traceInfo")
+        category = classify_trace(operate_desc, trace_info)
+        stage = classify_pipeline_stage(operate_desc, category, trace_info)
         cursor.execute("""
             INSERT OR REPLACE INTO logistics_trace (
                 trace_id, logistics_no, sys_logistics_code, logistics_name,
                 order_id, src_tid, shop_name, operate_desc, operate_time,
                 current_addr, trace_info, operate_type, operate_phone,
-                current_site, next_site, error_message, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                current_site, next_site, error_message, operate_category, pipeline_stage, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             trace_id, logistics_no, sys_logistics_code, logistics_name,
-            order_id, src_tid, SHOP_NAME, trace.get("operateDesc"),
+            order_id, src_tid, SHOP_NAME, operate_desc,
             trace.get("operateTime"), trace.get("currentAddr"),
-            trace.get("traceInfo"), trace.get("operateType"),
+            trace_info, trace.get("operateType"),
             trace.get("operatePhone"), trace.get("currentSite"),
             trace.get("nextSite"), trace.get("errorMessage"),
-            datetime.now().isoformat()
+            category, stage, datetime.now().isoformat()
         ))
         saved += 1
     return saved
@@ -200,7 +301,7 @@ def main():
                     pass  # 90天以上跳过
                 else:
                     fail_count += 1
-            except Exception as e:
+            except Exception:
                 fail_count += 1
     
     conn.commit()

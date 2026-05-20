@@ -10,7 +10,7 @@ logging.basicConfig(filename="/tmp/erp_all_order_fetch.log", level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 
-ERP_BASE = "https://erp.huice.com"
+from erp_config import ERP_API_BASE as ERP_BASE
 API_QUERY = "/api/main/oms/tradeQuery/query"
 SHOP = "cysxny05"
 TOKEN = os.environ.get("ERP_TOKEN")
@@ -24,7 +24,7 @@ HEADERS = {
     "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 }
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "erp_all.db")
+from erp_config import DB_PATH
 
 # 需要保留的关键字段（从API全量JSON中提取）
 KEY_FIELDS = [

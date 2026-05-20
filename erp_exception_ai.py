@@ -13,8 +13,7 @@ import time
 import sqlite3
 from datetime import datetime
 
-BASE = os.path.expanduser("~/pdd/Claudecode")
-DB_PATH = os.path.join(BASE, "erp_all.db")
+from erp_config import DB_PATH
 SHOP = "榴愿时刻工厂店"
 MAX_ANALYZE = 200  # 每次最多分析200条，避免API超额
 

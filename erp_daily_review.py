@@ -8,7 +8,7 @@ import base64
 import re
 from datetime import datetime
 
-BASE = os.path.expanduser('~/pdd/Claudecode')
+# BASE moved to erp_config
 DB = os.path.join(BASE, 'erp_all.db')
 LOG = '/tmp/erp_daily_review.log'
 

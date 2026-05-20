@@ -17,9 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 # ===== 配置 =====
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "erp_all.db")
-
-EMAIL_FROM = "88187402@qq.com"
+from erp_config import DB_PATH, EMAIL_FROM, EMAIL_AUTH, SMTP_HOST, SMTP_PORT
+# 发货日报独立收件人列表
 EMAIL_TO = [
     "88187402@qq.com",
     "17821279335@163.com",
@@ -32,9 +31,6 @@ EMAIL_TO = [
     "592340474@qq.com",
     "398307955@qq.com",
 ]
-EMAIL_AUTH = "uqauegwesrrybibe"
-SMTP_HOST = "smtp.qq.com"
-SMTP_PORT = 465
 
 # ===== 从数据库读取 =====
 def load_from_db(db_path):

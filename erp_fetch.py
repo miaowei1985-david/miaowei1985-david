@@ -17,12 +17,11 @@ logging.basicConfig(filename="/tmp/erp_fetch.log", level=logging.INFO, format="%
 logger = logging.getLogger(__name__)
 
 # ===== 配置 =====
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "erp_all.db")
-LOCAL_DB = f"/tmp/erp_all_{os.getpid()}.db"
+from erp_config import DB_PATH, ERP_API_BASE
 TOKEN = os.environ.get("ERP_TOKEN")
+LOCAL_DB = f"/tmp/erp_all_{os.getpid()}.db"
 SHOP = "cysxny05"
 
-ERP_BASE = "https://erp.huice.com"
 API_QUERY = "/api/main/oms/tradeQuery/query"
 HEADERS = {
     "app-code": "web", "app-product-code": "jisu", "app-version": "1.0.640",
@@ -69,7 +68,7 @@ def fetch_all(token, shop_id, page_tab, body_fn, desc="", page_size=2000, sessio
         body = body_fn(page_tab, page, page_size)
         print(f"  [{desc}] 请求第 {page} 页...", flush=True)
         try:
-            resp = session.post(f"{ERP_BASE}{API_QUERY}", headers=HEADERS, json=body, timeout=90)
+            resp = session.post(f"{ERP_API_BASE}{API_QUERY}", headers=HEADERS, json=body, timeout=90)
         except requests.RequestException as e:
             print(f"  [{desc}] 请求异常: {e}", flush=True)
             break
