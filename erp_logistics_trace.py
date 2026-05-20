@@ -3,6 +3,7 @@
 
 import os
 import sys
+import fcntl
 import sqlite3
 import requests
 import logging
@@ -254,7 +255,20 @@ def main():
     if not TOKEN:
         logger.error("请设置 ERP_TOKEN 环境变量")
         sys.exit(1)
-    
+
+    # 获取数据库写锁，防止与 ERP fetch 脚本并发写入
+    lock_path = DB_PATH + ".lock"
+    lock_fd = open(lock_path, "w")
+    logger.info("等待数据库写锁...")
+    fcntl.flock(lock_fd, fcntl.LOCK_EX)
+    try:
+        _do_logistics_fetch()
+    finally:
+        fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        lock_fd.close()
+
+
+def _do_logistics_fetch():
     conn = sqlite3.connect(DB_PATH)
     create_table(conn)
     

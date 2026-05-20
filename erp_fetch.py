@@ -4,10 +4,12 @@
 影子库原子切换 + 行数校验 + 鲜度元数据
 """
 import json
+import fcntl
 import os
 import shutil
 import sqlite3
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
@@ -250,33 +252,45 @@ def main():
     print("📥 并发拉取数据...")
     all_data = fetch_all_tabs(TOKEN, SHOP)
 
-    print(f"💾 保存到本地数据库 {LOCAL_DB}...")
-    save_sqlite(all_data, LOCAL_DB)
+    # 获取数据库写锁，防止与物流轨迹脚本并发写入
+    lock_path = DB_PATH + ".lock"
+    lock_fd = open(lock_path, "w")
+    print("  等待数据库写锁...", flush=True)
+    fcntl.flock(lock_fd, fcntl.LOCK_EX)
+    try:
+        _do_write(all_data, LOCAL_DB, DB_PATH)
+    finally:
+        fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        lock_fd.close()
 
-    print("💾 归档数据库到外部磁盘...", flush=True)
+
+def _do_write(all_data, local_db, db_path):
+    print(f"💾 保存到本地数据库 {local_db}...", flush=True)
+    save_sqlite(all_data, local_db)
 
     # 数据量校验
-    force = os.environ.get("FORCE_SWITCH") == "1"; ok, messages = validate_switch(DB_PATH, LOCAL_DB, all_data)
+    force = os.environ.get("FORCE_SWITCH") == "1"
+    ok, messages = validate_switch(db_path, local_db, all_data)
     if not ok and not force:
         print("❌ 数据量异常，拒绝切换:", flush=True)
         for m in messages:
             print(m, flush=True)
         print("  请检查 ERP Token 是否有效、API 是否正常", flush=True)
-        if os.path.exists(LOCAL_DB):
-            os.remove(LOCAL_DB)
+        if os.path.exists(local_db):
+            os.remove(local_db)
         sys.exit(1)
 
     # 原子切换
-    if os.path.exists(DB_PATH):
+    if os.path.exists(db_path):
         # 复制衍生表到新库（财务、售后等非 ERP 表）
-        src_conn = sqlite3.connect(DB_PATH, timeout=30.0)
+        src_conn = sqlite3.connect(db_path, timeout=30.0)
         extra_tables = []
         for row in src_conn.execute("SELECT name FROM sqlite_master WHERE type='table'"):
             if row[0] not in ERP_TABLES + ["sqlite_sequence", "sync_metadata"]:
                 extra_tables.append(row[0])
         if extra_tables:
             print(f"  保留衍生表: {', '.join(extra_tables)}", flush=True)
-            src_conn.execute(f"ATTACH DATABASE '{LOCAL_DB}' AS dst")
+            src_conn.execute(f"ATTACH DATABASE '{local_db}' AS dst")
             for tbl in extra_tables:
                 src_conn.execute(f"DROP TABLE IF EXISTS dst.{tbl}")
                 src_conn.execute(f"CREATE TABLE dst.{tbl} AS SELECT * FROM {tbl}")
@@ -290,14 +304,12 @@ def main():
             src_conn.commit()
             src_conn.close()
 
-        atomic_switch(DB_PATH, LOCAL_DB, all_data)
+        atomic_switch(db_path, local_db, all_data)
     else:
-        shutil.move(LOCAL_DB, DB_PATH)
+        shutil.move(local_db, db_path)
 
     # 记录鲜度元数据
-    save_sync_metadata(DB_PATH, all_data)
-
-
+    save_sync_metadata(db_path, all_data)
     print(f"✅ 数据入库完成: {sum(len(r) for _, _, r in all_data)} 条")
 
 if __name__ == "__main__":
