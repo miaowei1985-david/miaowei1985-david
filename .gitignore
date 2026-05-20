@@ -1,0 +1,25 @@
+# 数据库
+erp_all.db
+erp_all.db-*
+
+# 上传/导入文件
+uploads/
+*.xlsx
+*.csv
+
+# 备份文件
+*.bak
+*.db-shm
+*.db-wal
+
+# macOS
+.DS_Store
+
+# 凭证/密钥（如果有的话）
+.env
+*.key
+*.pem
+
+# 知识库文档（可选）
+ERP_系统知识库.md
+Obsidian/

@@ -1,0 +1,29 @@
+{
+  "full_report": {
+    "wc_cnt": 6795,
+    "ws_cnt": 808,
+    "fn_cnt": 23133,
+    "as_total": 29584,
+    "as_total_amt": 4670457.96,
+    "ship_rate": 75.26353461738677,
+    "as_rate_on_total": 96.25195210827694,
+    "as_reject_cnt": 839,
+    "as_reject_net": 59037.42,
+    "fin_income": 9615976.090000661,
+    "fin_expense": 5101411.500000599,
+    "fin_net": 4514564.590000062,
+    "pending_cnt": 23126,
+    "settled_net": 1056070.7600000135,
+    "pending_net": 3355139.8100005863,
+    "refund_ratio": 103.45312082465821
+  },
+  "warehouse": {
+    "wc_cnt": 16980,
+    "wc_paid": 2862302.6099999137,
+    "ws_cnt": 3399,
+    "ws_paid": 631604.3700000071,
+    "repeat_cust": 2666,
+    "repeat_orders": 6341,
+    "repeat_paid": 1010152.0100000151
+  }
+}
