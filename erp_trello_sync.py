@@ -14,7 +14,7 @@ from datetime import datetime
 
 # === 配置 ===
 TRELLO_KEY = os.environ.get("TRELLO_KEY", "")
-TRELLO_TOKEN = os.environ.get("TRELLO_TOKEN", "")"
+TRELLO_TOKEN = os.environ.get("TRELLO_TOKEN", "")
 BOARD_ID = "6a0bff4f9449877e387214a7"
 DB_PATH = "/Users/macmini4pro/pdd/Claudecode/erp_all.db"
 SHOP = "榴愿时刻工厂店"
