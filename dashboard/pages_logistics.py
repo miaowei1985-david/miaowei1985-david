@@ -100,6 +100,9 @@ def render_logistics():
         GROUP BY logistics_no, trace_info
     """).fetchall():
         no, info, t = row
+        info = info or ""
+        if not info:
+            continue
         if no not in stage_map:
             stage_map[no] = {}
         if any(k in info for k in ["尖竹汶", "揽收点", "已收取快件"]):
