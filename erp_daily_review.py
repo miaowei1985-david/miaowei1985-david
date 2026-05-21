@@ -8,8 +8,7 @@ import base64
 import re
 from datetime import datetime
 
-# BASE moved to erp_config
-DB = os.path.join(BASE, 'erp_all.db')
+from erp_config import DB_PATH as DB
 LOG = '/tmp/erp_daily_review.log'
 
 def run(cmd, timeout=30):

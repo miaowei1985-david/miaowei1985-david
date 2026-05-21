@@ -202,6 +202,13 @@ def atomic_switch(db_path, local_db, all_data):
         conn.execute("BEGIN")
         for tab_name, _, rows in all_data:
             tbl = f"erp_{tab_name.lower()}"
+            # 检查 local_db 中是否存在该表（空数据时跳过创建）
+            exists = conn.execute(
+                "SELECT COUNT(*) FROM new_db.sqlite_master WHERE type='table' AND name=?", (tbl,)
+            ).fetchone()[0]
+            if not exists:
+                print(f"    跳过 {tbl}（local_db 中不存在，可能为空数据）", flush=True)
+                continue
             conn.execute(f'DROP TABLE IF EXISTS {tbl}')
             conn.execute(f'CREATE TABLE {tbl} AS SELECT * FROM new_db.{tbl}')
             # 重建索引
